@@ -1,5 +1,6 @@
 package com.demo.printingservice.serviceImpl;
 
+import com.demo.printingservice.config.PrintRegisterListener;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -11,17 +12,24 @@ import org.apache.pdfbox.printing.PDFPageable;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.util.Matrix;
+import sun.print.PageableDoc;
 
-import javax.print.DocFlavor;
-import javax.print.DocPrintJob;
-import javax.print.PrintService;
-import javax.print.PrintServiceLookup;
+import javax.print.*;
+import javax.print.attribute.HashPrintRequestAttributeSet;
+import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.PrintServiceAttribute;
+import javax.print.attribute.PrintServiceAttributeSet;
+import javax.print.attribute.standard.Copies;
+import javax.print.attribute.standard.MediaSizeName;
+import javax.print.event.PrintJobAdapter;
+import javax.print.event.PrintJobEvent;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.print.PrinterJob;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.UUID;
 
 @Slf4j
 public class Printer {
@@ -35,16 +43,21 @@ public class Printer {
             PrintService service = getPrintService(printers);
             if(service!=null){
                 DocPrintJob job=service.createPrintJob();
-//                PrintRegisterListener plistener= new PrintRegisterListener(job);
-
-                PrinterJob pjob = PrinterJob.getPrinterJob();
-                pjob.setPrintService(job.getPrintService());
-                pjob.setCopies(numCopies);
-                pjob.setPageable(new PDFPageable(pdfDoc));
+                PrintRegisterListener plistener= new PrintRegisterListener(job);
+//                PrinterJob pjob = PrinterJob.getPrinterJob();
+//                pjob.setPrintService(job.getPrintService());
+//                pjob.setCopies(numCopies);
+//                pjob.setPageable(new PDFPageable(pdfDoc));
                 for (int i : mPageContentStreamMap.keySet()) {
                     mPageContentStreamMap.get(i).close();
                 }
-                pjob.print();
+                PrintRequestAttributeSet attrib=new HashPrintRequestAttributeSet();
+                attrib.add(MediaSizeName.ISO_A4);
+                attrib.add(new Copies(numCopies));
+
+                Doc doc=new PageableDoc(new PDFPageable(pdfDoc));
+                job.print(doc,attrib);
+                plistener.waitForDone();
 //                Doc doc=new SimpleDoc(inputbyte,FLAVOR,null );
 //                PrintRequestAttributeSet pras = new HashPrintRequestAttributeSet();
 //                pras.add(MediaSizeName.ISO_A4);
@@ -52,7 +65,6 @@ public class Printer {
 //                pras.add(new Copies(numCopies));
 //                job.print(doc,pras);
 
-//                plistener.waitForDone();
 
 
 
